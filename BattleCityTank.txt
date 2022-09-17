@@ -1,0 +1,583 @@
+var level = 2;
+var tilemaps = [];
+var tilemap1 = [
+  "sssssssssssssssssssssssssss",
+  "s           bs            s",
+  "s p         bs          c s",
+  "s           bs            s",
+  "s        bbbbs  bb        s",
+  "s        bbbbs  bb        s",
+  "s        bbbbs  bb        s",
+  "s         bb              s",
+  "s          b              s",
+  "s   bbb             bbb   s",
+  "s   bbbb           bbbb   s",
+  "s   bbbbb         bbbbb   s",
+  "sbbbbbb     bbb     bbbbbbs",
+  "sssssss     bbb     sssssss",
+  "sbbbbbb     bbb           s",
+  "s   bbbbb                 s",
+  "s   bbbb            bbb   s",
+  "s   bbb             bbb   s",
+  "s              b          s",
+  "s             bb          s",
+  "s        bb  sbbbb        s",
+  "s        bb  sbbbb        s",
+  "s        bb  sbbbb        s",
+  "s            sb           s",
+  "s c          sb         c s",
+  "s            sb           s",
+  "sssssssssssssssssssssssssss",
+]
+
+var tilemap2 = [
+  "sssssssssssssssssssssssssss",
+  "s           bsb           s",
+  "s p         bsb         c s",
+  "s           bbb           s",
+  "s        bb     bb        s",
+  "s        bb     bb        s",
+  "s        bb     bb        s",
+  "s         bb   bb         s",
+  "s          b   b          s",
+  "s   bbb     sss     bbb   s",
+  "s   bssb           bssb   s",
+  "s   bbbbb         bbbbb   s",
+  "s          s   s          s",
+  "s          s   s          s",
+  "s          s   s          s",
+  "s   bbbbb         bbbbb   s",
+  "s   bbbb           bbbbssss",
+  "sbbbbbb     sss     bbbbbbs",
+  "sbbbb      b   b      bbbbs",
+  "sbbb      bb   bb      bbbs",
+  "sbbb     bbb   bbb     bbbs",
+  "sbbb     bbb   bbb     bbbs",
+  "s        bbb   bbb        s",
+  "s  bbbbbbbbbbbbbbbbbbbbb  s",
+  "s c         bsb         c s",
+  "s           bsb           s",
+  "sssssssssssssssssssssssssss",
+]
+
+var tilemap3 = [
+  "sssssssssssssssssssssssssss",
+  "s            s            s",
+  "s p          s   bbb    c s",
+  "s            s            s",
+  "s          bbsbb          s",
+  "s          bb bb          s",
+  "s          bb bb     bb   s",
+  "s          bbsbb     bb   s",
+  "s            s            s",
+  "s  sbbbbs    s      bbb   s",
+  "s  sb  bs    s     bbbb   s",
+  "s  sb  bs    s    bbbbb   s",
+  "sbbsb  bsbbbbs      bbbbbbs",
+  "sssss  ssssssssssssssssssss",
+  "sbbbbbbbbbbbbs            s",
+  "s            s            s",
+  "s            s            s",
+  "s bb     sssssssss        s",
+  "s bb     sbbbbbbbs        s",
+  "s    bb  sssssssss         s",
+  "s        bb     bb        s",
+  "s  b     bb     bb        s",
+  "s  b    sssssssssss       s",
+  "s       sbbbbbbbbbs       s",
+  "s c  bb sbbbbbbbbbs     c s",
+  "s       sbbbbbbbbbs       s",
+  "sssssssssssssssssssssssssss",
+]
+
+var solidBlocks = [];
+var breakableBlocks = [];
+var brickImg;
+var wallImg;
+
+var player;
+var computers = [];
+
+var bullets = [];
+
+function preload() {
+  brickImg = loadImage('brick.png');
+  wallImg = loadImage('wall.png');
+}
+
+function setup() {
+  createCanvas(540, 560);
+  textAlign(CENTER);
+  brickImg.resize(20,20); 
+  tilemaps.push(tilemap1);
+  tilemaps.push(tilemap2);
+  tilemaps.push(tilemap3);
+  start();
+}
+
+function draw() {
+  background(40);
+  
+  for(let i = 0; i < solidBlocks.length; i++) solidBlocks[i].show();
+  for(let i = 0; i < breakableBlocks.length; i++) breakableBlocks[i].show();
+  for(let i = 0; i < bullets.length; i++) bullets[i].update();
+  for(let i = bullets.length-1; i >= 0; i--) if(bullets[i].pos.x <= -100) bullets.splice(i,1);
+  for(let i = 0; i < computers.length; i++) if(computers[i].lives > 0) computers[i].update();
+  else if(computers[i].lives <= 0) computers[i].pos.x = -1000;
+  
+  player.update();
+  
+  checkWin();
+  
+  noStroke();
+  fill(255);
+  textSize(16);
+  text("Level: " + level, width/2, height - 4);
+}
+
+function checkWin() {
+  var alive = 0;
+  for(let i = 0; i < computers.length; i++) if(computers[i].lives > 0) alive++;
+  if(alive == 0) {
+    level++;
+    
+    if(level == 4) level = 1;
+    start();
+  }
+}
+
+
+function collisionBreakableBlocks(rx,ry,rw,rh,destroy) {
+  for(let i = 0; i < breakableBlocks.length; i++) {
+    if(breakableBlocks[i].collision(rx,ry,rw,rh,destroy)) return true;
+  }
+  return false;
+}
+function collisionSolidBlocks(rx,ry,rw,rh) {
+  for(let i = 0; i < solidBlocks.length; i++) {
+    if(solidBlocks[i].collision(rx,ry,rw,rh)) return true;
+  }
+  return false;
+}
+function collisionComputersApartFrom(index,rx,ry,rw,rh) {
+  for(let i = 0; i < computers.length; i++) {
+    if(index != i) {
+      if(computers[i].collision(rx,ry,rw,rh)) return true;
+    }
+  }
+  return false;
+}
+
+function start() {
+  computers = [];
+  solidBlocks = [];
+  breakableBlocks = [];
+  var tilemap = tilemaps[level-1];
+  
+  for (var i = 0; i< tilemap.length; i++) {
+        for (var j =0; j < tilemap[i].length; j++) {
+            switch (tilemap[i][j]) {
+                case 's': solidBlocks.push(new SOLIDBLOCK(j*20, i*20));
+                    break;
+                case 'b': breakableBlocks.push(new BREAKABLEBLOCK(j*20, i*20));
+                    break;
+                case 'p': player = new PLAYER(j*20, i*20);
+                    break;
+                case 'c': computers.push(new COMPUTER(j*20, i*20, computers.length));
+                    break;
+            }
+        }
+  }
+}
+
+function keyPressed() {
+  if(key == 'a') {
+    player.aKey = true;
+    player.dir = 3;
+  }
+  if(key == 'w') {
+    player.wKey = true;
+    player.dir = 0;
+  }
+  if(key == 'd') {
+    player.dKey = true;
+    player.dir = 1;
+  }
+  if(key == 's'){ 
+    player.sKey = true;
+    player.dir = 2;
+  }
+  if(key == ' ') player.shoot();
+}
+function keyReleased() {
+  if(key == 'a') player.aKey = false;
+  if(key == 'w') player.wKey = false;
+  if(key == 'd') player.dKey = false;
+  if(key == 's') player.sKey = false;
+}
+
+
+class BREAKABLEBLOCK {
+  constructor(posX, posY) {
+    this.size = 20;
+    this.pos =  createVector(posX, posY);
+  }
+  show() {
+    /*stroke(200,50);
+    strokeWeight(1);
+    fill(158, 37, 28,200);
+    rect(this.pos.x, this.pos.y, this.size, this.size);
+    */
+    
+    image(brickImg, this.pos.x, this.pos.y);
+  }
+  collision(rx, ry, rw, rh, destroy) {
+    if (this.pos.x + this.size >= rx &&    // r1 right edge past r2 left
+      this.pos.x <= rx + rw &&    // r1 left edge past r2 right
+      this.pos.y + this.size >= ry &&    // r1 top edge past r2 bottom
+      this.pos.y <= ry + rh) {    // r1 bottom edge past r2 top
+      if(destroy) this.pos.x = -100;
+      return true;
+    }
+    return false;
+  }
+}
+class BULLET {
+  constructor(posX, posY, dir, shotBy) {
+    this.pos = createVector(posX, posY);
+    this.speed = 5;
+    this.size = 5;
+    this.dir = dir;
+    this.shotBy = shotBy;
+    
+   // print(this.shotBy)
+  }
+  update(){
+    this.move();
+    this.collisionBlocks();
+    this.collisionTanks();
+    this.show();
+    
+  }
+  show() {
+    noStroke();
+    fill(255);
+    rect(this.pos.x, this.pos.y, this.size, this.size);
+  }
+  move() {
+    switch(this.dir) {
+      case 0:
+        this.pos.y -= this.speed;
+        break;
+      case 1:
+        this.pos.x += this.speed;
+        break;
+      case 2:
+        this.pos.y += this.speed;
+        break;
+      case 3:
+        this.pos.x -= this.speed;
+        break;
+    }
+  }
+  collisionBlocks() {
+    if(collisionBreakableBlocks(this.pos.x, this.pos.y, this.size, this.size, true)) this.pos.x = -1000;
+    if(collisionSolidBlocks(this.pos.x, this.pos.y, this.size, this.size)) this.pos.x = -1000;
+  }
+  collisionTanks() {
+    if(this.shotBy == 5) {
+      for(let i = 0; i < computers.length; i++) {
+        if(computers[i].collision(this.pos.x,this.pos.y,this.size,this.size)) {
+          this.pos.x = -1000;
+          computers[i].lives--;
+        }
+      }
+    }else{
+      for(let i = 0; i < computers.length; i++) {
+        if(computers[i].collision(this.pos.x,this.pos.y,this.size,this.size) && this.shotBy != i) {
+
+          this.pos.x = -1000;
+          computers[i].lives--;
+        }
+      }
+      if(player.collision(this.pos.x,this.pos.y,this.size,this.size)) {
+          player.lives--;
+          this.pos.x = -1000;
+      }
+    }
+  }
+}
+
+
+class COMPUTER {
+  constructor(posX, posY, index) {
+    this.index = index;
+    this.pos = createVector(posX, posY);
+    this.size = 20;
+    
+    this.dir = int(random(0,4)); //up, right, down, left
+    this.cooldownDir = int(random(120, 240));
+    this.speed = 1;
+    
+    this.shootingCooldown = int(random(30,90));
+    
+    this.lives = 3;
+  }
+  update(){
+    
+    this.move();
+    this.detectObjectsInFront();
+    this.show()
+    
+    this.shootingCooldown--;
+    if(this.shootingCooldown <= 0) {
+      this.shootingCooldown = int(random(20,50));
+      this.shoot();
+    }
+  }
+  show() {
+    stroke(240);
+    strokeWeight(2);
+    
+    var colorTwo = color(0);
+    if(this.lives == 3) colorTwo = color(23, 163, 13, 150);
+    else if(this.lives == 2) colorTwo = color(186, 130, 7, 150);
+    else if(this.lives == 1) colorTwo = color(186, 31, 7,150);
+    
+    drawingContext.shadowBlur = 15;
+    drawingContext.shadowColor = color(colorTwo);
+    
+    if(this.dir == 1 || this.dir == 3) {
+    fill(69, 45, 41);
+    rect(this.pos.x, this.pos.y + 1.5, this.size, this.size-3);
+      
+    rect(this.pos.x+1.5, this.pos.y -1.5 , this.size-3, 3);
+    rect(this.pos.x+1.5, this.pos.y + this.size-1.5 , this.size-3, 3);
+    }else{
+    fill(69, 45, 41);
+    rect(this.pos.x+1.5, this.pos.y, this.size-3, this.size);
+      
+    rect(this.pos.x-1.5, this.pos.y+1.5 , 3, this.size-3);
+    rect(this.pos.x+this.size-1.5, this.pos.y+1.5, 3, this.size-3);
+    }
+    
+    fill(255,150);
+    
+    circle(this.pos.x + this.size/2, this.pos.y + this.size/2, this.size/2);
+    
+    if(this.dir == 1) rect(this.pos.x + this.size/2 - 3, this.pos.y + this.size/2-1.5, 17, 3);
+    else if(this.dir == 3) rect(this.pos.x + this.size/2 + 3 - 17, this.pos.y + this.size/2-1.5, 17, 3);
+    else if(this.dir == 2) rect(this.pos.x + this.size/2 - 1.5, this.pos.y + this.size/2-3, 3, 17);
+    else if(this.dir == 0) rect(this.pos.x + this.size/2 -1.5, this.pos.y + this.size/2+ 3 - 17, 3, 17);
+    drawingContext.shadowBlur = 0;
+  }
+  
+  shoot() {
+    bullets.push(new BULLET(this.pos.x + this.size/2, this.pos.y + this.size/2, this.dir, this.index));
+  }
+  
+  move() {
+    this.cooldownDir--;
+    if(this.cooldownDir <= 0) {
+      this.cooldownDir = int(random(180, 300));
+      this.dir = int(random(0,4));
+    }
+    
+    
+    switch(this.dir) {
+      case 0:
+        this.pos.y -= this.speed;
+        break;
+      case 1:
+        this.pos.x += this.speed;
+        break;
+      case 2:
+        this.pos.y += this.speed;
+        break;
+      case 3:
+        this.pos.x -= this.speed;
+        break;
+    }
+  }
+  detectObjectsInFront() {
+    switch(this.dir) {
+      case 0:
+        if(this.collisionWithAny(this.pos.x, this.pos.y - 3, this.size, 3)) {
+          this.dir = int(random(0,4));
+        }
+        break;
+      case 1:
+        if(this.collisionWithAny(this.pos.x + this.size + 3, this.pos.y, 3, this.size)) {
+          this.dir = int(random(0,4));
+        }
+        break;
+      case 2:
+        if(this.collisionWithAny(this.pos.x, this.pos.y + this.size + 3, this.size, 3)) {
+          this.dir = int(random(0,4));
+        }
+        break;
+      case 3:
+        if(this.collisionWithAny(this.pos.x - 3, this.pos.y, 3, this.size)) {
+          this.dir = int(random(0,4));
+        }
+        break;
+    }
+  }
+  collisionWithAny(rx,ry,rw,rh) {
+  if(collisionSolidBlocks(rx,ry,rw,rh)) return true;
+  if(collisionBreakableBlocks(rx,ry,rw,rh,false)) return true;
+  if(player.collision(rx,ry,rw,rh)) return true;
+  if(collisionComputersApartFrom(this.index,rx,ry,rw,rh)) return true;
+  return false;
+}
+  collision(rx, ry, rw, rh) {
+    if (this.pos.x + this.size > rx &&    // r1 right edge past r2 left
+      this.pos.x < rx + rw &&    // r1 left edge past r2 right
+      this.pos.y + this.size > ry &&    // r1 top edge past r2 bottom
+      this.pos.y < ry + rh) {    // r1 bottom edge past r2 top
+      return true;
+    }
+    return false;
+  }
+}
+
+
+class PLAYER {
+  constructor(posX, posY) {
+    this.aKey = false;
+    this.wKey = false;
+    this.dKey = false;
+    this.sKey = false;
+    this.dir = 0;
+    
+    this.pos = createVector(posX, posY);
+    this.size = 20;
+    this.speed = 1;
+    
+    this.lives = 3;
+    
+    this.bulletCooldown = 0;
+  }
+  update(){
+    this.bulletCooldown--;
+    
+    this.move();
+    this.show()
+    
+    if(this.lives == 0) {
+      level = 1;
+      start();
+    }
+  }
+  show() {
+    stroke(240);
+    strokeWeight(2);
+    
+    var colorOne = color(0);
+    var colorTwo = color(0);
+    if(this.lives == 3) colorTwo = color(23, 163, 13, 150);
+    else if(this.lives == 2) colorTwo = color(186, 130, 7, 150);
+    else if(this.lives == 1) colorTwo = color(186, 31, 7,150);
+    
+    drawingContext.shadowBlur = 15;
+    drawingContext.shadowColor = color(colorTwo);
+    
+    if(this.dir == 1 || this.dir == 3) {
+    fill(colorOne);
+    rect(this.pos.x, this.pos.y + 1.5, this.size, this.size-3);
+      fill(255);
+    rect(this.pos.x+1.5, this.pos.y -1.5 , this.size-3, 3);
+    rect(this.pos.x+1.5, this.pos.y + this.size-1.5 , this.size-3, 3);
+    }else{
+    fill(colorOne);
+    rect(this.pos.x+1.5, this.pos.y, this.size-3, this.size);
+      fill(255);
+    rect(this.pos.x-1.5, this.pos.y+1.5 , 3, this.size-3);
+    rect(this.pos.x+this.size-1.5, this.pos.y+1.5, 3, this.size-3);
+    }
+    
+    fill(255,150);
+    
+    circle(this.pos.x + this.size/2, this.pos.y + this.size/2, this.size/2);
+    
+    if(this.dir == 1) rect(this.pos.x + this.size/2 - 3, this.pos.y + this.size/2-1.5, 17, 3);
+    else if(this.dir == 3) rect(this.pos.x + this.size/2 + 3 - 17, this.pos.y + this.size/2-1.5, 17, 3);
+    else if(this.dir == 2) rect(this.pos.x + this.size/2 - 1.5, this.pos.y + this.size/2-3, 3, 17);
+    else if(this.dir == 0) rect(this.pos.x + this.size/2 -1.5, this.pos.y + this.size/2+ 3 - 17, 3, 17);
+    drawingContext.shadowBlur = 0;
+  }
+  shoot() {
+    if(this.bulletCooldown < 0) {
+    this.bulletCooldown = 30;
+    bullets.push(new BULLET(this.pos.x + this.size/2, this.pos.y + this.size/2, this.dir, 5));
+  }
+  }
+  
+  move() {
+    var objectsInDir = this.detectObjectsInFront();
+    
+    if(this.wKey && !objectsInDir[0]) {
+      this.pos.y -= this.speed;
+      this.dir = 0;
+    } else if(this.aKey && !objectsInDir[3]) {
+      this.pos.x -= this.speed;
+      this.dir = 3;
+    } else if(this.sKey && !objectsInDir[2]) {
+      this.pos.y += this.speed;
+      this.dir = 2;
+    } else if(this.dKey && !objectsInDir[1]) {
+      this.pos.x += this.speed;
+      this.dir = 1;
+    }
+  }
+  
+  detectObjectsInFront() {
+        var objects = [false,false,false,false];
+        if(this.collisionWithAny(this.pos.x, this.pos.y - 2, this.size, 2)) objects[0] = true;
+        if(this.collisionWithAny(this.pos.x + this.size + 2, this.pos.y, 2, this.size)) objects[1] = true;
+        if(this.collisionWithAny(this.pos.x, this.pos.y + this.size + 2, this.size, 2)) objects[2] = true;
+        if(this.collisionWithAny(this.pos.x - 2, this.pos.y, 2, this.size)) objects[3] = true;
+    return objects;
+  }
+  collisionWithAny(rx,ry,rw,rh) {
+  if(collisionSolidBlocks(rx,ry,rw,rh)) return true;
+  if(collisionBreakableBlocks(rx,ry,rw,rh,false)) return true;
+  if(collisionComputersApartFrom(-1,rx,ry,rw,rh)) return true;
+  return false;
+  }
+  collision(rx, ry, rw, rh) {
+    if (this.pos.x + this.size >= rx &&    // r1 right edge past r2 left
+      this.pos.x <= rx + rw &&    // r1 left edge past r2 right
+      this.pos.y + this.size >= ry &&    // r1 top edge past r2 bottom
+      this.pos.y <= ry + rh) {    // r1 bottom edge past r2 top
+      return true;
+    }
+    return false;
+  }
+}
+
+
+class SOLIDBLOCK {
+  constructor(posX, posY) {
+    this.size = 20;
+    this.pos =  createVector(posX, posY);
+  }
+  show() {
+    /*
+    stroke(200);
+    strokeWeight(2);
+    noFill();
+    rect(this.pos.x, this.pos.y, this.size, this.size);
+    */
+     image(wallImg, this.pos.x, this.pos.y);
+  }
+  collision(rx, ry, rw, rh) {
+    if (this.pos.x + this.size >= rx &&    // r1 right edge past r2 left
+      this.pos.x <= rx + rw &&    // r1 left edge past r2 right
+      this.pos.y + this.size >= ry &&    // r1 top edge past r2 bottom
+      this.pos.y <= ry + rh) {    // r1 bottom edge past r2 top
+      return true;
+    }
+    return false;
+  }
+}
